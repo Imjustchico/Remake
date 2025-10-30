@@ -489,6 +489,7 @@ local function SetSystem(SlotNumber, System)
 	end
 
 	local humanoid = betaRig:FindFirstChild("Humanoid")
+	local humanoid = workspace:FindFirstChild("BetaRig"):FindFirstChild("Humanoid")
 	local animation = script:FindFirstChild("Animation")
 	if humanoid and animation then
 		humanoid:LoadAnimation(animation):Play()
@@ -504,6 +505,7 @@ local function SetSystem(SlotNumber, System)
 		else
 			warn("BetaRig Right Arm is missing; skipping BlastEffect placement.")
 		end
+		CreateEffect.CFrame = workspace.BetaRig["Right Arm"].CFrame
 		CreateEffect.Parent = workspace.IgnoreList
 
 		delay(0.15, function()
@@ -558,6 +560,7 @@ local function SetSystem(SlotNumber, System)
 		else
 			warn("BetaRig Right Arm is missing; skipping system effect placement.")
 		end
+		CreateEffect.CFrame = workspace.BetaRig["Right Arm"].CFrame
 		CreateEffect.Parent = workspace.IgnoreList
 
 		delay(1, function()
