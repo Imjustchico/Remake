@@ -5,13 +5,20 @@ script.Parent.CharacterSelection.Characters.Position = UDim2.new(-0.2, 0, 0.25, 
 script.Parent.CharacterSelection.PlayDesk.Main.Position = UDim2.new(-1, 0, 0, 0)
 game.Lighting.Blur.Size = 15
 
-local Plr = script.Parent.Parent.Parent
-local db = false
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local CharacterSelection = script.Parent:WaitForChild("CharacterSelection")
 local MarketplaceService = game:GetService("MarketplaceService")
-local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local RemoteFolder = ReplicatedStorage:WaitForChild("Remotes")
+local KeysEvent = RemoteFolder:WaitForChild("Keys")
+local TeleportRequestEvent = RemoteFolder:WaitForChild("TeleportRequest")
+
+local Plr = Players.LocalPlayer
+local db = false
+local CharacterSelection = script.Parent:WaitForChild("CharacterSelection")
 local Slots = CharacterSelection.Characters
 
 local i = 1
@@ -363,62 +370,14 @@ local function StartSelectionTrait(UserData, UserTempData)
 					gui.Visible = false
 					TeleportEffect(UserData)
 
-					if UserData then
-						local Environment = require(game.ServerStorage.Config.GameEnvironment)
-						local system = UserData:FindFirstChild("System") and UserData.System.Value
-						if not system then
-							warn("Missing System in UserData. Cannot teleport.")
-							return
-						end
-
-						local targetPlaceId = Environment:GetWorldIdBySystem(system)
-						if not targetPlaceId then
-							warn("Failed to find a valid target world for system: " .. tostring(system))
-							return
-						end
-
-						local success, retryCount = false, 0
-						repeat
-							task.wait(1)
-							retryCount += 1
-							local ok, err = pcall(function()
-								local reservedServerId = TeleportService:ReserveServer(targetPlaceId)
-
-								-- Ensure valid slot and data before teleporting
-								local slotNumber = UserSlot.NumberSlot.Value
-								local slotValue = UserSlot:FindFirstChild("Slot" .. slotNumber)
-								if not slotValue or slotValue.Value == false then
-									warn("[TELEPORT] Attempted to teleport deleted or invalid slot:", slotNumber)
-									return
-								end
-
-								-- Build teleport data payload
-								local teleportData = {
-									UserId = Plr.UserId,
-									SlotNumber = slotNumber,
-									System = UserData.System.Value,
-									World = UserData.World.Value,
-									Timestamp = os.time(),
-								}
-
-								-- Perform teleport (supports public + reserved servers)
-								if game.PrivateServerId and game.PrivateServerId ~= "" then
-									TeleportService:TeleportToPrivateServer(targetPlaceId, reservedServerId, { Plr }, nil, teleportData)
-								else
-									TeleportService:Teleport(targetPlaceId, Plr, teleportData)
-								end
-							end)
-							if ok then
-								success = true
-							else
-								warn("Teleport failed [" .. retryCount .. "]:", err)
-							end
-						until success or retryCount >= 5
-
-						if not success then
-							warn("Failed to teleport after retries.")
-						end
-					end
+                                    if UserData then
+                                            local slotNumber = UserSlot.NumberSlot.Value
+                                            if slotNumber > 0 then
+                                                    TeleportRequestEvent:FireServer(slotNumber)
+                                            else
+                                                    warn("Invalid slot number for teleport request.")
+                                            end
+                                    end
 				end)
 			end
 		end)
@@ -1318,27 +1277,23 @@ Slots:WaitForChild("Slot4").AddCharacter.Button.MouseButton1Click:Connect(functi
 	CharacterCreate("Slot4")
 end)
 
-local Db = false
+local started = false
 
-script.Parent.Keys.OnServerEvent:Connect(function()
-	if Plr:FindFirstChild("Started") then
-		return
-	end
+local function requestStart()
+        if started then
+                return
+        end
 
-	StartScene()
+        started = true
+        StartScene()
+        KeysEvent:FireServer()
+end
 
-	local Folder = Instance.new("Folder", Plr)
-	Folder.Name = "Started"
-
-	repeat
-		wait()
-	until Plr.Character ~= nil
-
-	if Plr.Character:FindFirstChildOfClass("ForceField") then
-		Plr.Character:FindFirstChildOfClass("ForceField"):Destroy()
-	end
-	Plr.Character:WaitForChild("HumanoidRootPart").Anchored = true
-	Plr.Character:WaitForChild("HumanoidRootPart").CFrame = game.Workspace:WaitForChild("Effect").Rig:WaitForChild("HumanoidRootPart").CFrame
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then
+                return
+        end
+        requestStart()
 end)
 
 repeat
