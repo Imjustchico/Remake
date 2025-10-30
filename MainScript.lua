@@ -482,6 +482,13 @@ local function SetSystem(SlotNumber, System)
 		end)
 	end
 
+	local betaRig = workspace:FindFirstChild("BetaRig") or workspace:WaitForChild("BetaRig", 5)
+	if not betaRig then
+		warn("BetaRig is missing; skipping system animation setup.")
+		return
+	end
+
+	local humanoid = betaRig:FindFirstChild("Humanoid")
 	local humanoid = workspace:FindFirstChild("BetaRig"):FindFirstChild("Humanoid")
 	local animation = script:FindFirstChild("Animation")
 	if humanoid and animation then
@@ -492,6 +499,12 @@ local function SetSystem(SlotNumber, System)
 
 	delay(0.3, function()
 		local CreateEffect = game.ReplicatedStorage.BlastEffect:Clone()
+		local rightArm = betaRig:FindFirstChild("Right Arm")
+		if rightArm then
+			CreateEffect.CFrame = rightArm.CFrame
+		else
+			warn("BetaRig Right Arm is missing; skipping BlastEffect placement.")
+		end
 		CreateEffect.CFrame = workspace.BetaRig["Right Arm"].CFrame
 		CreateEffect.Parent = workspace.IgnoreList
 
@@ -541,6 +554,12 @@ local function SetSystem(SlotNumber, System)
 		end)
 
 		local CreateEffect = game.ReplicatedStorage[System .. "Effect"]:Clone()
+		local rightArm = betaRig:FindFirstChild("Right Arm")
+		if rightArm then
+			CreateEffect.CFrame = rightArm.CFrame
+		else
+			warn("BetaRig Right Arm is missing; skipping system effect placement.")
+		end
 		CreateEffect.CFrame = workspace.BetaRig["Right Arm"].CFrame
 		CreateEffect.Parent = workspace.IgnoreList
 
